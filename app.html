@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Framing Lumber Cut Optimizer</title>
+  <style>
+    :root {
+      --primary-color: #2c5282; /* A deeper blue */
+      --secondary-color: #6c757d;
+      --background-color: #f7fafc;
+      --surface-color: #ffffff;
+      --text-color: #2d3748;
+      --border-color: #e2e8f0;
+      --error-color: #c53030;
+      --success-color: #2f855a;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--background-color);
+      color: var(--text-color);
+      line-height: 1.6;
+      margin: 0;
+      padding: 1.5rem;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 1.5rem;
+    }
+    h1 {
+      color: var(--primary-color);
+      font-size: 2.25rem;
+    }
+    .card {
+      background-color: var(--surface-color);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+    input[type="text"],
+    input[type="number"] {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      box-sizing: border-box;
+      font-size: 1rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input[type="text"]:focus,
+    input[type="number"]:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(44, 82, 130, 0.2);
+    }
+    .piece-row-header {
+      display: grid;
+      grid-template-columns: 0.6fr auto 1fr auto 1fr auto 1.5fr 1fr auto;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      padding: 0 0.1rem;
+    }
+    .piece-row-header label {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--secondary-color);
+      margin-bottom: 0;
+      text-align: left; /* Changed from center to left */
+    }
+    .piece-row {
+      display: grid;
+      grid-template-columns: 0.6fr auto 1fr auto 1fr auto 1.5fr 1fr auto;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .piece-row span {
+      font-weight: bold;
+      color: var(--secondary-color);
+    }
+    .btn {
+      padding: 0.85rem 1.5rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      display: inline-block;
+      width: 100%;
+      box-sizing: border-box;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+    .btn:active {
+      transform: translateY(1px);
+    }
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: white;
+      margin-top: 1rem;
+    }
+    .btn-primary:hover {
+      background-color: #2b6cb0;
+    }
+    .btn-secondary {
+      background-color: #e2e8f0;
+      color: var(--text-color);
+    }
+    .btn-secondary:hover {
+      background-color: #cbd5e0;
+    }
+    .remove-piece-btn {
+      background-color: #fed7d7;
+      color: var(--error-color);
+      border: none;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      font-size: 1.2rem;
+      line-height: 32px;
+      text-align: center;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .remove-piece-btn:hover {
+      background-color: #fbb6b6;
+    }
+    #results-container {
+      border-top: 4px solid var(--primary-color);
+      padding-top: 1rem;
+    }
+    .board-layout {
+      border: 1px solid var(--border-color);
+      padding: 1rem;
+      margin-top: 1rem;
+      border-radius: 8px;
+      background-color: #f7fafc;
+    }
+    .hidden {
+      display: none;
+    }
+    .message {
+      text-align: center;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+    .message.error {
+      color: var(--error-color);
+      background-color: #fed7d7;
+      border: 1px solid #fbb6b6;
+    }
+    .message.success {
+      color: var(--success-color);
+      background-color: #c6f6d5;
+      border: 1px solid #9ae6b4;
+    }
+    #summary ul {
+      list-style-type: none;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+    #summary li {
+      background-color: #ebf4ff;
+      padding: 1rem;
+      border-radius: 6px;
+      border-left: 4px solid var(--primary-color);
+    }
+    .actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .main-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .main-actions > .btn-primary {
+      flex-grow: 1;
+      margin-top: 0;
+    }
+    /* New Styles for Toggle and Table */
+    .top-controls {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .unit-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+    }
+    .unit-toggle .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 26px;
+    }
+    .unit-toggle .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .unit-toggle .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 26px;
+    }
+    .unit-toggle .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    .unit-toggle input:checked + .slider {
+      background-color: var(--primary-color);
+    }
+    .unit-toggle input:checked + .slider:before {
+      transform: translateX(24px);
+    }
+    details {
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+    }
+    summary {
+      font-weight: 600;
+      padding: 1rem;
+      cursor: pointer;
+      outline: none;
+    }
+    .table-container {
+      padding: 0 1rem 1rem 1rem;
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    th {
+      background-color: #f7fafc;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Framing Lumber Cut Optimizer 🪵</h1>
+      <p>Enter your required cut list to find the most efficient way to buy and cut your lumber, minimizing waste.</p>
+    </header>
+
+    <main>
+      <div id="message-container"></div>
+
+      <details>
+        <summary>Common Lumber Dimensions</summary>
+        <div class="table-container">
+          <h4>North America (Nominal vs. Actual)</h4>
+          <table>
+            <thead><tr><th>Nominal</th><th>Actual (in)</th><th>Actual (mm)</th></tr></thead>
+            <tbody>
+              <tr><td>2 x 4</td><td>1.5 x 3.5</td><td>38 x 89</td></tr>
+              <tr><td>2 x 6</td><td>1.5 x 5.5</td><td>38 x 140</td></tr>
+              <tr><td>2 x 8</td><td>1.5 x 7.25</td><td>38 x 184</td></tr>
+              <tr><td>2 x 10</td><td>1.5 x 9.25</td><td>38 x 235</td></tr>
+              <tr><td>4 x 4</td><td>3.5 x 3.5</td><td>89 x 89</td></tr>
+            </tbody>
+          </table>
+          <h4>Europe (Common Sizes)</h4>
+          <table>
+            <thead><tr><th>Metric (mm)</th><th>Imperial (in, approx.)</th></tr></thead>
+            <tbody>
+              <tr><td>45 x 95</td><td>1.77 x 3.74</td></tr>
+              <tr><td>45 x 145</td><td>1.77 x 5.71</td></tr>
+              <tr><td>45 x 195</td><td>1.77 x 7.68</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <div class="top-controls">
+        <div class="unit-toggle">
+          <span>Imperial (in)</span>
+          <label class="switch">
+            <input type="checkbox" id="unit-switch">
+            <span class="slider"></span>
+          </label>
+          <span>Metric (mm)</span>
+        </div>
+      </div>
+
+      <form id="cut-list-form">
+        <section class="card">
+          <h2>1. Settings</h2>
+          <div class="form-group">
+            <label for="stock-lengths">Available Stock Lengths (<span class="unit-label">in</span>, comma-separated)</label>
+            <input type="text" id="stock-lengths" value="96, 120, 144" required>
+          </div>
+          <div class="form-group">
+            <label for="kerf">Saw Blade Kerf (<span class="unit-label">in</span>)</label>
+            <input type="number" id="kerf" step="any" min="0" value="0.125" required>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>2. Your Cut List</h2>
+          <div class="piece-row-header">
+            <label>Quantity</label>
+            <span></span>
+            <label>Width</label>
+            <span></span>
+            <label>Height</label>
+            <span></span>
+            <label>Length</label>
+            <label>Unit</label>
+            <span></span>
+          </div>
+          <div id="pieces-container">
+            <!-- Piece inputs will be dynamically added here -->
+          </div>
+          <div class="actions">
+            <button type="button" id="add-piece-btn" class="btn btn-secondary">+ Add Piece</button>
+            <button type="button" id="share-btn" class="btn btn-secondary">🔗 Share List</button>
+          </div>
+        </section>
+        
+        <div class="main-actions">
+          <button type="submit" id="calculate-btn" class="btn btn-primary">Optimize My Cuts</button>
+          <script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="michaelbeav" data-color="#FFDD00" data-emoji=""  data-font="Cookie" data-text="Support Me" data-outline-color="#000000" data-font-color="#000000" data-coffee-color="#ffffff" ></script>
+        </div>
+      </form>
+
+      <section id="results-container" class="card hidden">
+        <h2>3. Optimized Purchase & Cut List</h2>
+        <div id="summary"></div>
+        <div id="results"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- JS Template for a new piece row -->
+  <template id="piece-template">
+    <div class="piece-row">
+      <input type="number" class="quantity" value="1" min="1" step="1" title="Quantity" required>
+      <span>x</span>
+      <input type="number" class="width convertible" placeholder="Width" step="any" min="0" required>
+      <span>x</span>
+      <input type="number" class="height convertible" placeholder="Height" step="any" min="0" required>
+      <span>:</span>
+      <input type="number" class="length convertible" placeholder="Length" step="any" min="0" required>
+      <select class="unit-selector">
+        <option value="in">in</option>
+        <option value="mm">mm</option>
+      </select>
+      <button type="button" class="remove-piece-btn" title="Remove piece">&times;</button>
+    </div>
+  </template>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // --- DOM Elements ---
+      const addPieceBtn = document.getElementById('add-piece-btn');
+      const piecesContainer = document.getElementById('pieces-container');
+      const pieceTemplate = document.getElementById('piece-template');
+      const form = document.getElementById('cut-list-form');
+      const resultsContainer = document.getElementById('results-container');
+      const resultsDiv = document.getElementById('results');
+      const summaryDiv = document.getElementById('summary');
+      const shareBtn = document.getElementById('share-btn');
+      const messageContainer = document.getElementById('message-container');
+      const unitSwitch = document.getElementById('unit-switch');
+      
+      // --- App State & Constants ---
+      let appState = { unit: 'imperial' };
+      const IN_TO_MM = 25.4;
+
+      // --- Core Optimization Logic (works with a flat list of inches) ---
+      const optimizeCuts = (pieces, stockLengths, kerf) => {
+        const groupedPieces = pieces.reduce((acc, piece) => {
+          const dimKey = `${piece.width.toFixed(3)}x${piece.height.toFixed(3)}`;
+          if (!acc[dimKey]) acc[dimKey] = [];
+          acc[dimKey].push(parseFloat(piece.length));
+          return acc;
+        }, {});
+
+        stockLengths.sort((a, b) => a - b);
+        
+        const finalLayout = {};
+        let totalWaste = 0;
+        let totalUsedLumberLength = 0;
+        
+        for (const dim in groupedPieces) {
+          const lengths = groupedPieces[dim].sort((a, b) => b - a);
+          const bins = [];
+          
+          for (const length of lengths) {
+            if (length > stockLengths[stockLengths.length - 1]) {
+              return { error: `Piece with length ${length.toFixed(2)}" (${dim}) is longer than any available stock lumber.` };
+            }
+            let placed = false;
+            for (const bin of bins) {
+              const requiredLength = bin.cuts.length > 0 ? length + kerf : length;
+              if (bin.remaining >= requiredLength) {
+                bin.cuts.push(length);
+                bin.remaining -= requiredLength;
+                placed = true;
+                break;
+              }
+            }
+            if (!placed) {
+              let bestStockLength = stockLengths.find(sl => sl >= length) || stockLengths[stockLengths.length - 1];
+              bins.push({ length: bestStockLength, cuts: [length], remaining: bestStockLength - length });
+            }
+          }
+          finalLayout[dim] = bins;
+          bins.forEach(bin => {
+            totalWaste += bin.remaining;
+            totalUsedLumberLength += bin.length;
+          });
+        }
+        
+        const requiredLength = pieces.reduce((sum, p) => sum + parseFloat(p.length), 0);
+        const wastePercentage = totalUsedLumberLength > 0 ? (totalWaste / totalUsedLumberLength * 100) : 0;
+
+        return {
+          optimized_layout: finalLayout,
+          total_waste: totalWaste,
+          waste_percentage: wastePercentage,
+          total_lumber_needed: totalUsedLumberLength,
+          total_cut_length: requiredLength
+        };
+      };
+
+      // --- Unit Conversion ---
+      const getConvertibleInputs = () => [
+          document.getElementById('stock-lengths'),
+          document.getElementById('kerf'),
+          ...document.querySelectorAll('.piece-row .convertible'),
+      ];
+
+      const updateUIForUnitChange = () => {
+        const isMetric = appState.unit === 'metric';
+        
+        document.querySelectorAll('.unit-label').forEach(label => {
+          label.textContent = isMetric ? 'mm' : 'in';
+        });
+
+        document.querySelectorAll('.unit-selector').forEach(sel => {
+            sel.value = isMetric ? 'mm' : 'in';
+        });
+
+        getConvertibleInputs().forEach(input => {
+          if (!input.value) return;
+
+          if (isMetric) {
+            // Imperial to Metric: Store original and convert for display
+            const imperialValue = input.value;
+            input.dataset.imperialValue = imperialValue; // Store original
+            
+            if (input.id === 'stock-lengths') {
+              input.value = imperialValue.split(',').map(s => (parseFloat(s.trim()) * IN_TO_MM).toFixed(1)).join(', ');
+            } else {
+              input.value = (parseFloat(imperialValue) * IN_TO_MM).toFixed(input.id === 'kerf' ? 2 : 1);
+            }
+          } else {
+            // Metric to Imperial: Restore from storage or convert back if edited
+            if (input.dataset.imperialValue) {
+              input.value = input.dataset.imperialValue; // Restore original
+            } else {
+              // This input was edited in metric, so convert it back
+              if (input.id === 'stock-lengths') {
+                input.value = input.value.split(',').map(s => (parseFloat(s.trim()) / IN_TO_MM).toFixed(2)).join(', ');
+              } else {
+                input.value = (parseFloat(input.value) / IN_TO_MM).toFixed(input.id === 'kerf' ? 3 : 2);
+              }
+            }
+            delete input.dataset.imperialValue; // Clean up
+          }
+        });
+      };
+      
+      unitSwitch.addEventListener('change', (e) => {
+        appState.unit = e.target.checked ? 'metric' : 'imperial';
+        updateUIForUnitChange();
+        saveStateToLocalStorage();
+      });
+
+      // --- State Management (always saves in imperial) ---
+      const getCurrentState = () => {
+        const isMetric = appState.unit === 'metric';
+        const toImperial = val => isMetric ? (parseFloat(val) / IN_TO_MM) : parseFloat(val);
+
+        const pieces = Array.from(piecesContainer.querySelectorAll('.piece-row')).map(row => {
+            const width = row.querySelector('.width').value;
+            const height = row.querySelector('.height').value;
+            const length = row.querySelector('.length').value;
+            const quantity = row.querySelector('.quantity').value;
+            if (!width && !height && !length) return null;
+            return {
+                width: width ? toImperial(width).toFixed(3) : '',
+                height: height ? toImperial(height).toFixed(3) : '',
+                length: length ? toImperial(length).toFixed(3) : '',
+                quantity: quantity || '1',
+            };
+        }).filter(Boolean);
+
+        const stockLengthsVal = document.getElementById('stock-lengths').value;
+        const kerfVal = document.getElementById('kerf').value;
+        
+        return {
+          stockLengths: isMetric ? stockLengthsVal.split(',').map(s => (parseFloat(s.trim())/IN_TO_MM).toFixed(2)).join(', ') : stockLengthsVal,
+          kerf: isMetric ? (parseFloat(kerfVal)/IN_TO_MM).toFixed(3) : kerfVal,
+          pieces: pieces
+        };
+      };
+
+      const loadState = (state) => {
+        if (!state) return;
+        document.getElementById('stock-lengths').value = state.stockLengths || '96, 120, 144';
+        document.getElementById('kerf').value = state.kerf || '0.125';
+        piecesContainer.innerHTML = '';
+        if (state.pieces && state.pieces.length > 0) {
+          state.pieces.forEach(p => addPieceRow(p));
+        } else {
+          addPieceRow({ width: 1.75, height: 3.5, quantity: 1 });
+        }
+      };
+
+      const saveStateToLocalStorage = () => {
+        try {
+          const state = getCurrentState();
+          localStorage.setItem('lumberOptimizerState', JSON.stringify(state));
+        } catch (e) { console.error("Could not save state:", e); }
+      };
+
+      const loadStateFromLocalStorage = () => {
+        try {
+          const savedState = localStorage.getItem('lumberOptimizerState');
+          return savedState ? JSON.parse(savedState) : null;
+        } catch (e) {
+          console.error("Could not load state:", e);
+          localStorage.removeItem('lumberOptimizerState');
+          return null;
+        }
+      };
+
+      const loadStateFromURL = () => {
+        try {
+          if (window.location.hash.startsWith('#data=')) {
+            const jsonString = atob(decodeURIComponent(window.location.hash.substring(6)));
+            return JSON.parse(jsonString);
+          }
+        } catch (e) {
+          console.error("Could not parse state from URL:", e);
+          showMessage('Could not load shared link.', 'error');
+        }
+        return null;
+      };
+      
+      const showMessage = (text, type = 'success') => {
+        messageContainer.innerHTML = `<div class="message ${type}">${text}</div>`;
+        setTimeout(() => { messageContainer.innerHTML = ''; }, 4000);
+      };
+
+      // --- UI and DOM Manipulation ---
+      const addPieceRow = (piece = {}) => {
+        const newRow = pieceTemplate.content.cloneNode(true);
+        if (piece.width) newRow.querySelector('.width').value = piece.width;
+        if (piece.height) newRow.querySelector('.height').value = piece.height;
+        if (piece.length) newRow.querySelector('.length').value = piece.length;
+        if (piece.quantity) newRow.querySelector('.quantity').value = piece.quantity;
+        
+        newRow.querySelector('.remove-piece-btn').addEventListener('click', (e) => {
+            e.target.closest('.piece-row').remove();
+            saveStateToLocalStorage();
+        });
+
+        piecesContainer.appendChild(newRow);
+      };
+      
+      addPieceBtn.addEventListener('click', () => {
+        const lastPieceRow = piecesContainer.querySelector('.piece-row:last-child');
+        let lastPiece = { quantity: 1 }; // Default new quantity to 1
+        if (lastPieceRow) {
+            lastPiece.width = lastPieceRow.querySelector('.width').value;
+            lastPiece.height = lastPieceRow.querySelector('.height').value;
+        }
+        addPieceRow(lastPiece);
+        saveStateToLocalStorage();
+      });
+      
+      form.addEventListener('input', (e) => {
+        // If user edits a metric value, remove the stored imperial value
+        // so it gets converted back properly instead of restored.
+        if (appState.unit === 'metric' && e.target.dataset.imperialValue) {
+            delete e.target.dataset.imperialValue;
+        }
+        saveStateToLocalStorage();
+      });
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const calculateBtn = document.getElementById('calculate-btn');
+        calculateBtn.textContent = 'Calculating...';
+        calculateBtn.disabled = true;
+        messageContainer.innerHTML = '';
+
+        const stateInImperial = getCurrentState();
+
+        const piecesWithQuantity = stateInImperial.pieces.map(p => ({
+            width: parseFloat(p.width),
+            height: parseFloat(p.height),
+            length: parseFloat(p.length),
+            quantity: parseInt(p.quantity, 10) || 1
+        })).filter(p => p.width && p.height && p.length && p.quantity > 0);
+
+        const pieces = piecesWithQuantity.flatMap(p => 
+            Array.from({ length: p.quantity }, () => ({ width: p.width, height: p.height, length: p.length }))
+        );
+
+        const stockLengths = stateInImperial.stockLengths.split(',')
+          .map(s => parseFloat(s.trim()))
+          .filter(n => !isNaN(n) && n > 0);
+          
+        const kerf = parseFloat(stateInImperial.kerf);
+
+        if (pieces.length === 0) {
+            showMessage('Please add at least one piece to your cut list.', 'error');
+            resetButton();
+            return;
+        }
+
+        const result = optimizeCuts(pieces, stockLengths, kerf);
+
+        resultsDiv.innerHTML = '';
+        summaryDiv.innerHTML = '';
+
+        if (result.error) {
+          showMessage(result.error, 'error');
+        } else {
+          renderSummary(result);
+          renderResults(result.optimized_layout, kerf);
+          resultsContainer.classList.remove('hidden');
+          resultsContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        resetButton();
+        
+        function resetButton() {
+            calculateBtn.textContent = 'Optimize My Cuts';
+            calculateBtn.disabled = false;
+        }
+      });
+      
+      const renderSummary = (data) => {
+        const isMetric = appState.unit === 'metric';
+        const unit = isMetric ? 'mm' : '"';
+        const displayVal = (val) => isMetric ? (val * IN_TO_MM).toFixed(1) : val.toFixed(2);
+
+        summaryDiv.innerHTML = `
+          <ul>
+            <li>Total Cut Length: <strong>${displayVal(data.total_cut_length)}${unit}</strong></li>
+            <li>Purchase Length: <strong>${displayVal(data.total_lumber_needed)}${unit}</strong></li>
+            <li>Total Waste: <strong>${displayVal(data.total_waste)}${unit}</strong></li>
+            <li>Waste Percentage: <strong>${data.waste_percentage.toFixed(2)}%</strong></li>
+          </ul>
+        `;
+      };
+
+      const renderResults = (layout, kerf) => {
+        const isMetric = appState.unit === 'metric';
+        const unit = isMetric ? 'mm' : '"';
+        const displayVal = (val, prec=2) => isMetric ? (val * IN_TO_MM).toFixed(prec-1) : val.toFixed(prec);
+
+        for (const dim in layout) {
+          const bins = layout[dim];
+          const dimHeader = document.createElement('h3');
+          dimHeader.textContent = `Boards: ${dim}"`;
+          resultsDiv.appendChild(dimHeader);
+          
+          const purchaseList = bins.reduce((acc, bin) => {
+            acc[bin.length] = (acc[bin.length] || 0) + 1;
+            return acc;
+          }, {});
+
+          let purchaseHTML = '<strong>Purchase List:</strong><ul>';
+          for (const length in purchaseList) {
+            purchaseHTML += `<li>${purchaseList[length]} x ${displayVal(parseFloat(length), 0)}${unit} board(s)</li>`;
+          }
+          purchaseHTML += '</ul>';
+          resultsDiv.innerHTML += purchaseHTML;
+
+          bins.forEach((bin, index) => {
+            const boardDiv = document.createElement('div');
+            boardDiv.className = 'board-layout';
+            boardDiv.innerHTML = `
+              <h4>Board #${index + 1} (Stock Length: ${displayVal(bin.length, 0)}${unit})</h4>
+              <p><strong>Cuts:</strong> ${bin.cuts.map(c => displayVal(c)).join(`${unit}, `)}${unit}</p>
+              <p><strong>Remaining:</strong> ${displayVal(bin.remaining, 3)}${unit}</p>
+            `;
+            resultsDiv.appendChild(boardDiv);
+          });
+        }
+      };
+
+      shareBtn.addEventListener('click', () => {
+        const state = getCurrentState(); // Always gets state in imperial
+        const jsonString = JSON.stringify(state);
+        const encodedData = encodeURIComponent(btoa(jsonString));
+        const url = `${window.location.origin}${window.location.pathname}#data=${encodedData}`;
+        
+        navigator.clipboard.writeText(url).then(() => {
+          showMessage('Shareable link copied to clipboard!', 'success');
+        }, () => {
+          showMessage('Could not copy link.', 'error');
+        });
+      });
+
+      // --- Initial Load ---
+      const urlState = loadStateFromURL();
+      if (urlState) {
+        loadState(urlState);
+        showMessage('Loaded cut list from shared link.', 'success');
+        history.pushState("", document.title, window.location.pathname + window.location.search);
+      } else {
+        const localState = loadStateFromLocalStorage();
+        if (localState) {
+          loadState(localState);
+        } else {
+          addPieceRow({width: 1.75, height: 3.5, quantity: 1});
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+
